@@ -25,7 +25,16 @@ pub fn encode_2bit_indexed_trns_png(
         palette.extend_from_slice(&target_rgb);
     }
 
-    let indices = convert_indices(&buf);
+    let indices: BitVec<u8, Msb0> = buf
+        .chunks_exact(4)
+        .flat_map(|chunk| match chunk[3] {
+            a if a > 213 => bitvec![1, 1], // TRNS[3]
+            a if a > 128 => bitvec![1, 0], // TRNS[2]
+            a if a > 42 => bitvec![0, 1],  // TRNS[1]
+            _ => bitvec![0, 0],            // TRNS[0]
+        })
+        .collect();
+    let indices = indices.into_vec();
 
     let mut encoded_data = Vec::<u8>::with_capacity(indices.capacity());
 
@@ -43,29 +52,4 @@ pub fn encode_2bit_indexed_trns_png(
     }
 
     encoded_data
-}
-
-fn convert_indices(buf: &[u8]) -> Vec<u8> {
-    let indices: BitVec<u8, Msb0> = buf
-        .chunks_exact(4)
-        .map(|chunk| match chunk[3] {
-            a if a > 213 => TRNS[3],
-            a if a > 128 => TRNS[2],
-            a if a > 42 => TRNS[1],
-            _ => TRNS[0],
-        })
-        .flat_map(|quantized_a| {
-            let pos = TRNS.iter().position(|trns_a| &quantized_a == trns_a);
-            match pos {
-                Some(0) => bitvec![0, 0],
-                Some(1) => bitvec![0, 1],
-                Some(2) => bitvec![1, 0],
-                Some(3) => bitvec![1, 1],
-                Some(_) => panic!("Invalid indices value"),
-                None => panic!("None indices value"),
-            }
-        })
-        .collect();
-
-    indices.into_vec()
 }
