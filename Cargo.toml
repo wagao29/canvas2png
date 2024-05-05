@@ -1,6 +1,6 @@
 [package]
 name = "canvas2png"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["wagao <wagao1029@gmail.com>"]
 edition = "2018"
 
